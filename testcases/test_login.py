@@ -20,5 +20,9 @@ class TestLogin:
     @pytest.mark.parametrize("case", login_cases, ids=lambda c: c.get("case", "unknown"))
     def test_login(self, case: dict) -> None:
         allure.dynamic.title(f"登录测试 - {case.get('case', 'unknown')}")
-        allure.dynamic.description(f"测试登录功能，输入用户名和密码：{case.get('username', 'unknown')}, {case.get('password', 'unknown')}")
+        allure.dynamic.description(
+            f"测试登录功能，输入用户名和密码："
+            f"{case.get('username', 'unknown')},"
+            f"{case.get('password', 'unknown')}"
+        )
         assert 1 == 1
