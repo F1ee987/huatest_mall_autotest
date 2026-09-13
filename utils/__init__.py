@@ -7,7 +7,8 @@
 """
 try:
     from .loaders import AutoLoader
+    from .api_client import ApiClient
 except ImportError as e:
     raise ImportError(f"无法导入数据加载模块: {e}") from e
 
-__all__ = ["AutoLoader"]
+__all__ = ["AutoLoader", "ApiClient"]
