@@ -13,12 +13,35 @@ from pathlib import Path
 
 class DataLoader(ABC):
     """数据加载基类"""
-    def _validate_file_exists(self, file_path: str) -> None:
-        """校验文件是否存在"""
-        if not Path(file_path).exists():
-            raise FileNotFoundError(f"文件不存在: {file_path}")
 
-    def _get_suffix(self, file_path: str) -> str:
+    @staticmethod
+    def _resolve_path(file_path: str) -> Path:
+        """解析文件路径，返回实际存在的绝对路径"""
+        p = Path(file_path)
+        if p.is_absolute():
+            if p.exists():
+                return p
+            raise FileNotFoundError(f"文件不存在: {p}")
+
+        # 1. 尝试相对于 CWD
+        if p.exists():
+            return p.resolve()
+
+        # 2. 尝试相对于项目根（loaders.py 的上上级）
+        project_root = Path(__file__).parent.parent
+        alt = project_root / file_path
+        if alt.exists():
+            return alt.resolve()
+
+        raise FileNotFoundError(
+            f"文件不存在: {file_path}\n"
+            f"尝试过:\n"
+            f"  CWD 下: {Path.cwd() / file_path}\n"
+            f"  项目根下: {alt.resolve()}"
+        )
+
+    @staticmethod
+    def _get_suffix(file_path: str) -> str:
         """获取文件后缀（小写，带点）"""
         return Path(file_path).suffix.lower()
 
@@ -28,7 +51,8 @@ class DataLoader(ABC):
         pass
 
     def load(self, file_path: str) -> Any:
-        """公共入口：加载数据
+        """
+        公共入口：加载数据
 
         Args:
             file_path (str): 文件路径
@@ -40,37 +64,29 @@ class DataLoader(ABC):
             FileNotFoundError: 文件不存在时抛出
             ValueError: 文件格式不正确时抛出
         """
-        self._validate_file_exists(file_path)
-        return self._do_load(file_path)
+        resolved = self._resolve_path(file_path)
+        return self._do_load(str(resolved))
 
 class YamlLoader(DataLoader):
-    """
-    负责加载 YAML 文件
-    """
+    """负责加载 YAML 文件"""
     def _do_load(self, file_path: str) -> Any:
         with open(file_path, mode='r', encoding='utf-8') as f:
             return yaml.safe_load(f)
 
 class JsonLoader(DataLoader):
-    """
-    负责加载 JSON 文件
-    """
+    """负责加载 JSON 文件"""
     def _do_load(self, file_path: str) -> Any:
         with open(file_path, mode='r', encoding='utf-8') as f:
             return json.load(f)
 
 class CsvLoader(DataLoader):
-    """
-    负责加载 CSV 文件
-    """
+    """负责加载 CSV 文件"""
     def _do_load(self, file_path: str) -> Any:
         with open(file_path, mode='r', encoding='utf-8') as f:
             return list(csv.DictReader(f))
 
 class AutoLoader(DataLoader):
-    """
-    根据文件名后缀自动加载数据
-    """
+    """根据文件名后缀自动加载数据"""
     _loaders: Dict[str, DataLoader] = {
         ".yaml": YamlLoader(),
         ".yml": YamlLoader(),
@@ -79,17 +95,15 @@ class AutoLoader(DataLoader):
     }
 
     def _do_load(self, file_path: str) -> Any:
-        """根据后缀自动选择加载器"""
         suffix = self._get_suffix(file_path)
-
         if suffix not in self._loaders:
             raise ValueError(
                 f"不支持的文件格式: {suffix}，"
                 f"仅支持: {list(self._loaders.keys())}"
             )
-
         return self._loaders[suffix].load(file_path)
 
 if __name__ == '__main__':
     loader = AutoLoader()
-    print(loader.load('../data/login.yaml'))
+    data = loader.load('data/login.yaml')
+    print(data)  # 输出 YAML 文件的内容
