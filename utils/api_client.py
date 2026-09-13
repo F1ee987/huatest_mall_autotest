@@ -20,7 +20,7 @@ class ApiClient:
                             使用 Session 可在多次请求间复用 TCP 连接和 Cookie，
                             适合高频调用或需要保持会话状态的场景。
         """
-        self.session: Optional[requests.Session] = (
+        self.__session: Optional[requests.Session] = (
             requests.Session() if use_session else None
         )
 
@@ -38,8 +38,8 @@ class ApiClient:
                       - verify: SSL 校验
         :return: requests.Response 对象；请求失败时返回 None
         """
-        if self.session:
-            return self.session.request(method, url, **kwargs)
+        if self.__session:
+            return self.__session.request(method, url, **kwargs)
         return requests.request(method, url, **kwargs)
 
     def get(self, url: str, **kwargs) -> Optional[Response]:
@@ -69,5 +69,5 @@ class ApiClient:
         在启用 use_session=True 时，建议显式调用，
         或使用 with 语句管理生命周期。
         """
-        if self.session:
-            self.session.close()
+        if self.__session:
+            self.__session.close()
