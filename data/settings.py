@@ -7,5 +7,5 @@
 """
 from utils import AutoLoader
 
-BASE_URL = AutoLoader().load(file_path="conf.json")
+BASE_URL = AutoLoader().load(file_path="data/conf.json")
 LOGIN_URL = "?s=/index/user/login.html" #登录URL
