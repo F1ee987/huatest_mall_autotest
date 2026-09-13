@@ -7,7 +7,67 @@
 """
 import requests
 from requests import Response
+from typing import Optional
 
 class ApiClient:
-    """封装 HTTP 请求的基础客户端"""
-    pass
+    """基础 HTTP API 客户端封装，支持单次请求和 Session 复用。"""
+
+    def __init__(self, use_session: bool = False) -> None:
+        """
+        初始化 API 客户端。
+
+        :param use_session: 是否使用 requests.Session。
+                            使用 Session 可在多次请求间复用 TCP 连接和 Cookie，
+                            适合高频调用或需要保持会话状态的场景。
+        """
+        self.session: Optional[requests.Session] = (
+            requests.Session() if use_session else None
+        )
+
+    def _request(self, method: str, url: str, **kwargs) -> Optional[Response]:
+        """
+        发送 HTTP 请求的统一入口。
+
+        :param method: HTTP 请求方法，如 'GET', 'POST', 'PUT', 'DELETE'
+        :param url: 请求地址
+        :param kwargs: requests 原生参数，如：
+                      - params: 查询参数
+                      - json / data: 请求体
+                      - headers: 请求头
+                      - timeout: 超时时间
+                      - verify: SSL 校验
+        :return: requests.Response 对象；请求失败时返回 None
+        """
+        if self.session:
+            return self.session.request(method, url, **kwargs)
+        return requests.request(method, url, **kwargs)
+
+    def get(self, url: str, **kwargs) -> Optional[Response]:
+        """
+        发送 GET 请求。
+
+        :param url: 请求地址
+        :param kwargs: requests 原生参数（如 params, headers, timeout 等）
+        :return: requests.Response 对象；请求失败时返回 None
+        """
+        return self._request("GET", url, **kwargs)
+
+    def post(self, url: str, **kwargs) -> Optional[Response]:
+        """
+        发送 POST 请求。
+
+        :param url: 请求地址
+        :param kwargs: requests 原生参数（如 json, data, headers, timeout 等）
+        :return: requests.Response 对象；请求失败时返回 None
+        """
+        return self._request("POST", url, **kwargs)
+
+    def close(self) -> None:
+        """
+        关闭 Session（若存在）。
+
+        在启用 use_session=True 时，建议显式调用，
+        或使用 with 语句管理生命周期。
+        """
+        if self.session:
+            self.session.close()
