@@ -1,0 +1,13 @@
+登录:
+  - case: "正常登录测试"
+    username: "huace_xm"
+    password: "123456"
+  
+  - case: "用户名为空"
+    username: ""
+    password: "123456"
+  
+  - case: "密码为空"
+    username: "huace_xm"
+    password: ""
+  
