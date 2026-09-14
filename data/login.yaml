@@ -1,13 +1,16 @@
 登录:
   - case: "正常登录测试"
-    username: "huace_xm"
-    password: "123456"
+    accounts: "huace_xm"
+    pwd: "123456"
+    type: "username"
   
   - case: "用户名为空"
-    username: ""
-    password: "123456"
+    accounts: ""
+    pwd: "123456"
+    type: "username"
   
   - case: "密码为空"
-    username: "huace_xm"
-    password: ""
+    accounts: "huace_xm"
+    pwd: ""
+    type: "username"
   
