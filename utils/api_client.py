@@ -64,12 +64,20 @@ class ApiClient:
 
     @property
     def cookie_str(self) -> str:
-        """返回当前 Session 的 Cookie 字符串（用于日志/断言）。"""
-        if self.__session:
-            return "; ".join(
-                f"{k}={v}" for k, v in self.__session.cookies.items()
-            )
-        return ""
+        """
+        返回当前 Session 的 Cookie 字符串（用于日志 / Allure / 断言）。
+        示例：PHPSESSID=abc123; token=xyz
+        """
+        if not self.__session:
+            return ""
+
+        cookies = self.__session.cookies
+        if not cookies:
+            return ""
+
+        return "; ".join(
+            f"{k}={v}" for k, v in cookies.items()
+        )
 
     def close(self) -> None:
         """

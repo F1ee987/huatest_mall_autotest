@@ -1,21 +1,141 @@
 登录:
-  - case: "正常登录测试"
-    accounts: "huace_xm"
-    pwd: "123456"
-    type: "username"
-    code: 0
-    msg: "登录成功"
-  
-  - case: "用户名为空"
-    accounts: ""
-    pwd: "123456"
-    type: "username"
-    code: -1
-    "msg": "登录账号不能为空"
-  
-  - case: "密码为空"
-    accounts: "huace_xm"
-    pwd: ""
-    type: "username"
-    code: -1
-    msg: "密码格式 6~18 个字符之间"
+  # ==================== 冒烟用例 ====================
+  - case_id: LOGIN_001
+    case: 正常登录
+    mark:
+      smoke: true
+      login: true
+    severity: critical
+    description: 使用正确的用户名和密码登录，预期登录成功并返回 PHPSESSID
+    request:
+      accounts: huace_xm
+      pwd: "123456"
+      type: username
+    expect:
+      code: 0
+      msg: 登录成功
+      cookie:
+        exists:
+          - PHPSESSID
+
+  # ==================== 异常校验 ====================
+  - case_id: LOGIN_002
+    case: 用户名为空
+    mark:
+      regression: true
+      login: true
+    severity: normal
+    description: 用户名为空，预期返回账号不能为空提示
+    request:
+      accounts: ""
+      pwd: "123456"
+      type: username
+    expect:
+      code: -1
+      msg: 登录账号不能为空
+
+  - case_id: LOGIN_003
+    case: 密码为空
+    mark:
+      regression: true
+      login: true
+    severity: normal
+    description: 密码为空，预期返回密码格式错误提示
+    request:
+      accounts: huace_xm
+      pwd: ""
+      type: username
+    expect:
+      code: -1
+      msg: 密码格式 6~18 个字符之间
+
+  - case_id: LOGIN_004
+    case: 用户名错误
+    mark:
+      regression: true
+      login: true
+    severity: normal
+    description: 用户名不存在，预期返回账号或密码错误
+    request:
+      accounts: not_exist_user
+      pwd: "123456"
+      type: username
+    expect:
+      code: -3
+      msg: 登录帐号不存在
+
+  - case_id: LOGIN_005
+    case: 密码错误
+    mark:
+      regression: true
+      login: true
+    severity: normal
+    description: 密码错误，预期返回账号或密码错误
+    request:
+      accounts: huace_xm
+      pwd: wrong_pwd
+      type: username
+    expect:
+      code: -4
+      msg: 密码错误
+
+  # ==================== 边界 & 安全 ====================
+  - case_id: LOGIN_006
+    case: 密码边界-最短
+    mark:
+      boundary: true
+      login: true
+    severity: minor
+    description: 密码为 6 位最小长度
+    request:
+      accounts: huace_xm
+      pwd: "123456"
+      type: username
+    expect:
+      code: 0
+      msg: 登录成功
+
+  - case_id: LOGIN_007
+    case: 密码边界-最长
+    mark:
+      boundary: true
+      login: true
+    severity: minor
+    description: 密码为 18 位最大长度
+    request:
+      accounts: huace_xm
+      pwd: "123456789012345678"
+      type: username
+    expect:
+      code: -4
+      msg: 密码错误
+
+  - case_id: LOGIN_008
+    case: SQL注入攻击
+    mark:
+      security: true
+      login: true
+    severity: critical
+    description: 用户名包含 SQL 注入字符，预期被安全拦截
+    request:
+      accounts: "' or 1=1 --"
+      pwd: "123456"
+      type: username
+    expect:
+      code: -3
+      msg: 登录帐号不存在
+
+  - case_id: LOGIN_009
+    case: 特殊字符用户名
+    mark:
+      boundary: true
+      login: true
+    severity: minor
+    description: 用户名包含特殊字符，预期校验失败
+    request:
+      accounts: "huace@#$%"
+      pwd: "123456"
+      type: username
+    expect:
+      code: -3
+      msg: 登录帐号不存在

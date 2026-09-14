@@ -105,5 +105,6 @@ class AutoLoader(DataLoader):
 
 if __name__ == '__main__':
     loader = AutoLoader()
-    data = loader.load('data/login.yaml')
-    print(data)  # 输出 YAML 文件的内容
+    data = loader.load('data/login.yaml').get('登录')
+    for item in data:
+        print(item)
