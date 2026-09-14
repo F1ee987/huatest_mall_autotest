@@ -62,6 +62,15 @@ class ApiClient:
         """
         return self._request("POST", url, **kwargs)
 
+    @property
+    def cookie_str(self) -> str:
+        """返回当前 Session 的 Cookie 字符串（用于日志/断言）。"""
+        if self.__session:
+            return "; ".join(
+                f"{k}={v}" for k, v in self.__session.cookies.items()
+            )
+        return ""
+
     def close(self) -> None:
         """
         关闭 Session（若存在）。

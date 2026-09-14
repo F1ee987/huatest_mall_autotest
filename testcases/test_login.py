@@ -49,3 +49,10 @@ class TestLogin:
             assert result.get("msg") == case.get("msg"), (
                 f"登录提示信息校验失败：预期 '{case.get('msg')}'，实际 '{result.get('msg')}'"
             )
+        if result.get("code") == 0:
+            with allure.step("保存登录会话服务端 Cookie"):
+                allure.attach(
+                    api_client.cookie_str,
+                    name="服务端 Cookie（PHPSESSID）",
+                    attachment_type=allure.attachment_type.TEXT
+                )
