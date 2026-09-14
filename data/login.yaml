@@ -3,14 +3,19 @@
     accounts: "huace_xm"
     pwd: "123456"
     type: "username"
+    code: 0
+    msg: "登录成功"
   
   - case: "用户名为空"
     accounts: ""
     pwd: "123456"
     type: "username"
+    code: -1
+    "msg": "登录账号不能为空"
   
   - case: "密码为空"
     accounts: "huace_xm"
     pwd: ""
     type: "username"
-  
+    code: -1
+    msg: "密码格式 6~18 个字符之间"

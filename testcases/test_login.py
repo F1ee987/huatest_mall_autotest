@@ -21,7 +21,7 @@ except (FileNotFoundError, KeyError, Exception):
 class TestLogin:
     @pytest.mark.parametrize("case", login_cases, ids=lambda c: c.get("case", "unknown"))
     def test_login(self, case: dict, api_client: ApiClient) -> None:
-        allure.dynamic.title(f"登录测试 - {case.get('case', 'unknown')}")
+        allure.dynamic.title(f"登录测试 - {case.get('case', 'unknown')},预期{"success" if case.get("code") == 0 else "failure"}")
         allure.dynamic.description(
             f"测试登录功能，输入用户名和密码："
             f"{case.get('accounts', 'unknown')},"
@@ -40,5 +40,5 @@ class TestLogin:
             except JSONDecodeError:
                 pytest.fail("响应内容不是JSON格式")
         with allure.step("验证登录结果"):
-            assert result.get("code") == 0, f"登录失败，返回码为{result.get('code')}"
-            assert result.get("msg") == "登录成功", f"登录失败，返回信息为{result.get('msg')}"
+            assert result.get("code") == case.get("code"), f"预期登录码{case.get('code')}，返回码为{result.get('code')}"
+            assert result.get("msg") == case.get("msg"), f"预期登录信息{case.get('msg')}，返回信息为{result.get('msg')}"
