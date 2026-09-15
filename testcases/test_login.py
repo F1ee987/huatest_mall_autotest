@@ -2,7 +2,7 @@ from json import JSONDecodeError
 import allure
 import pytest
 from utils import AutoLoader, ApiClient
-from data.settings import LOGIN_URL
+from config.settings import LOGIN_URL
 
 try:
     loader = AutoLoader()
