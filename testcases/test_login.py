@@ -1,16 +1,18 @@
 from json import JSONDecodeError
 import allure
 import pytest
+from requests import Response
+
 from utils import AutoLoader, ApiClient
 from config.settings import LOGIN_URL, replace_env_vars
 
 try:
-    loader = AutoLoader()
-    login_cases = loader.load('data/login.yaml').get('login', [])
+    loader: AutoLoader = AutoLoader()
+    login_cases: list[dict] = loader.load('data/login.yaml').get('login', [])
     if not login_cases:
         raise KeyError("登录数据缺失或格式错误")
-    _data_loaded = True
-    case_map = {c["case_id"]: c for c in login_cases}
+    _data_loaded: bool = True
+    case_map: dict[str, dict[str, dict]] = {c["case_id"]: c for c in login_cases}
 except (FileNotFoundError, KeyError, Exception):
     login_cases = []
     _data_loaded = False
@@ -23,8 +25,8 @@ class TestLogin:
         list(case_map.keys()),
         ids=lambda cid: f"{cid}_{case_map[cid]['case']}"
     )
-    def test_login(self, case_id, api_client: ApiClient):
-        case = case_map[case_id]
+    def test_login(self, case_id: str, api_client: ApiClient):
+        case: dict[str, dict] = case_map[case_id]
         #----------------------动态设置allure动态属性-------------------------------
         allure.dynamic.title(f"{case.get('case_id','unknown')}:{case.get('case', 'unknown')}"
         )
@@ -35,21 +37,21 @@ class TestLogin:
 
         with allure.step("发送登录请求"):
             try:
-                headers = {
+                headers: dict[str, str] = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                                   "AppleWebKit/537.36 (KHTML, like Gecko) "
                                   "Chrome/58.0.3029.110 Safari/537.3",
                     "x-requested-with": "XMLHttpRequest",
                 }
                 # 替换请求数据中的环境变量占位符
-                request_data = replace_env_vars(case.get('request', {}))
-                resp = api_client.post(LOGIN_URL, headers=headers, data=request_data)
+                request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
+                resp: Response = api_client.post(LOGIN_URL, headers=headers, data=request_data)
                 assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
                 result = resp.json()
             except JSONDecodeError:
                 pytest.fail("响应内容不是合法的 JSON 格式")
 
-        expect = case.get('expect')
+        expect: dict[str, str] = case.get('expect')
 
         with allure.step("校验登录返回结果"):
             assert result.get("code") == expect.get("code"), (
@@ -60,7 +62,7 @@ class TestLogin:
             )
         if result.get("code") == 0:
             with allure.step("保存登录会话服务端 Cookie"):
-                cookie_str = api_client.cookie_str
+                cookie_str: str = api_client.cookie_str
                 assert cookie_str, "登录成功但 Cookie 为空"
 
                 allure.attach(

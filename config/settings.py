@@ -7,6 +7,7 @@
 """
 import os
 from pathlib import Path
+from typing import Any
 from dotenv import load_dotenv
 from utils import AutoLoader
 
@@ -24,8 +25,8 @@ LOGIN_URL = f"{BASE_URL}?s=/index/user/login.html"  # 登录URL
 
 def replace_env_vars(data: dict) -> dict:
     """递归替换字典中的环境变量占位符"""
-    result = {}
-    env_map = {
+    result: dict[str, Any] = {}
+    env_map: dict[str, str] = {
         'PASSWORD': PASSWORD,
         'WRONG_PASSWORD': WRONG_PASSWORD,
     }

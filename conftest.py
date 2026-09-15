@@ -16,7 +16,7 @@ def api_client() -> Generator[ApiClient, None, None]:
 
     使用 yield 确保测试结束后正确释放 Session 资源。
     """
-    client = ApiClient(use_session=True)
+    client: ApiClient = ApiClient(use_session=True)
     try:
         yield client
     finally:
