@@ -9,7 +9,7 @@ from utils import ApiClient
 import pytest
 from typing import Generator
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def api_client() -> Generator[ApiClient, None, None]:
     """
     提供带 Session 的 ApiClient 实例。
