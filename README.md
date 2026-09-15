@@ -19,7 +19,7 @@ Huatest Mall 自动化接口测试项目，基于 **pytest + requests + allure**
 ├── config/
 │   ├── settings.py        # 配置（ENV 加载 / 占位符替换 / URL）
 │   └── conf.json          # 基础配置（BASE_URL）
-�── data/
+├── data/
 │   └── login.yaml         # 测试数据（YAML）
 ├── testcases/
 │   └── test_login.py      # 测试用例
@@ -29,7 +29,7 @@ Huatest Mall 自动化接口测试项目，基于 **pytest + requests + allure**
 ├── conftest.py            # pytest fixtures
 ├── pytest.ini             # pytest 配置
 ├── run.py                 # 运行入口（pytest + allure 报告）
-�── .env                   # 环境变量
+└──  .env                   # 环境变量
 ```
 
 ## 快速开始
