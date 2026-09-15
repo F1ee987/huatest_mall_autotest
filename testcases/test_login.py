@@ -2,11 +2,11 @@ from json import JSONDecodeError
 import allure
 import pytest
 from utils import AutoLoader, ApiClient
-from config.settings import LOGIN_URL
+from config.settings import LOGIN_URL, replace_env_vars
 
 try:
     loader = AutoLoader()
-    login_cases = loader.load('data/login.yaml').get('登录', [])
+    login_cases = loader.load('data/login.yaml').get('login', [])
     if not login_cases:
         raise KeyError("登录数据缺失或格式错误")
     _data_loaded = True
@@ -23,12 +23,12 @@ class TestLogin:
         list(case_map.keys()),
         ids=lambda cid: f"{cid}_{case_map[cid]['case']}"
     )
-    def test_login(self, case_id, api_client):
+    def test_login(self, case_id, api_client: ApiClient):
         case = case_map[case_id]
         #----------------------动态设置allure动态属性-------------------------------
         allure.dynamic.title(f"{case.get('case_id','unknown')}:{case.get('case', 'unknown')}"
         )
-        for tag in case.get("mark", {}):
+        for tag in case.get("tags", {}):
             allure.dynamic.tag(tag)
         allure.dynamic.severity(case.get("severity", "unknown"))
         allure.dynamic.description(case.get("description", "无"))
@@ -41,7 +41,9 @@ class TestLogin:
                                   "Chrome/58.0.3029.110 Safari/537.3",
                     "x-requested-with": "XMLHttpRequest",
                 }
-                resp = api_client.post(LOGIN_URL, headers=headers, data=case.get('request'))
+                # 替换请求数据中的环境变量占位符
+                request_data = replace_env_vars(case.get('request', {}))
+                resp = api_client.post(LOGIN_URL, headers=headers, data=request_data)
                 assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
                 result = resp.json()
             except JSONDecodeError:
