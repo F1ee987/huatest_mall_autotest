@@ -10,20 +10,26 @@ try:
     if not login_cases:
         raise KeyError("登录数据缺失或格式错误")
     _data_loaded = True
+    case_map = {c["case_id"]: c for c in login_cases}
 except (FileNotFoundError, KeyError, Exception):
     login_cases = []
     _data_loaded = False
 
 @pytest.mark.skipif(not _data_loaded, reason="数据文件缺失或格式错误")
 @allure.story("登录测试")
-@allure.severity("critical")
 class TestLogin:
-    @pytest.mark.parametrize("case", login_cases, ids=lambda c: f"{c.get('case_id', '')}_{c.get('case', '')}")
-    def test_login(self, case: dict, api_client: ApiClient) -> None:
+    @pytest.mark.parametrize(
+        "case_id",
+        list(case_map.keys()),
+        ids=lambda cid: f"{cid}_{case_map[cid]['case']}"
+    )
+    def test_login(self, case_id, api_client):
+        case = case_map[case_id]
         #----------------------动态设置allure动态属性-------------------------------
         allure.dynamic.title(f"{case.get('case_id','unknown')}:{case.get('case', 'unknown')}"
         )
-        allure.dynamic.tag(case.get("mark", "unknown"))
+        for tag in case.get("mark", {}):
+            allure.dynamic.tag(tag)
         allure.dynamic.severity(case.get("severity", "unknown"))
         allure.dynamic.description(case.get("description", "无"))
 
