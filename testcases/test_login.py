@@ -4,16 +4,18 @@ import pytest
 from requests import Response
 from utils import AutoLoader, ApiClient, set_allure_dynamic, attach_request, attach_response, attach_expect
 from config.settings import LOGIN_URL, replace_env_vars, HEADERS
+from typing import Optional
 
 try:
     loader: AutoLoader = AutoLoader()
-    login_cases: list[dict] = loader.load('data/login.yaml').get('login', [])
+    login_cases: list[dict[str,str]] = loader.load('data/login.yaml').get('login', [])
     if not login_cases:
         raise KeyError("登录数据缺失或格式错误")
     _data_loaded: bool = True
-    case_map: dict[str, dict[str, dict]] = {c["case_id"]: c for c in login_cases}
+    case_map: dict[str, dict[str, str]] = {c["case_id"]: c for c in login_cases}
 except (FileNotFoundError, KeyError, Exception):
     login_cases = []
+    case_map = {}
     _data_loaded = False
 
 @pytest.mark.skipif(not _data_loaded, reason="数据文件缺失或格式错误")
@@ -25,24 +27,25 @@ class TestLogin:
         ids=lambda cid: f"{cid}_{case_map[cid]['case']}"
     )
     def test_login(self, case_id: str, api_client: ApiClient):
-        case: dict[str, dict] = case_map[case_id]
+        case: dict[str, str] = case_map[case_id]
         set_allure_dynamic(case)
 
         with allure.step("发送登录请求"):
             request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
 
-            resp: Response = api_client.post(LOGIN_URL, headers=HEADERS, data=request_data)
-            try:
-                assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
-            except AssertionError:
-                attach_request(LOGIN_URL, request_data, HEADERS)
-                attach_response(resp.status_code, resp.text)
-                raise
+            resp: Optional[Response] = api_client.post(LOGIN_URL, headers=HEADERS, data=request_data)
+            if resp:
+                try:
+                    assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
+                except AssertionError:
+                    attach_request(LOGIN_URL, request_data, HEADERS)
+                    attach_response(resp.status_code, resp.text)
+                    raise
 
-            try:
-                result = resp.json()
-            except JSONDecodeError:
-                pytest.fail("响应内容不是合法的 JSON 格式")
+                try:
+                    result = resp.json()
+                except JSONDecodeError:
+                    pytest.fail("响应内容不是合法的 JSON 格式")
 
         with allure.step("校验登录返回结果"):
             expect: dict[str, str] = case.get('expect')

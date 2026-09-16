@@ -102,5 +102,4 @@ if __name__ == '__main__':
                       "Chrome/58.0.3029.110 Safari/537.3",
         "x-requested-with": "XMLHttpRequest",
     })
-    if response.status_code == 200:
-        print(response.json())
+    
