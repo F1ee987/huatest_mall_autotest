@@ -1,0 +1,77 @@
+register:
+  - case_id: REGISTER_001
+    case: 用户名为空
+    tags:
+      - register
+      - negative
+      - smoke
+    severity: normal
+    description: 用户名为空，预期返回账号不能为空提示
+    request:
+      accounts: ""
+      pwd: "${PASSWORD}"
+      type: username
+    expect:
+      code: -1
+      msg: 账号不能为空
+
+  - case_id: REGISTER_002
+    case: 密码为空
+    tags:
+      - register
+      - negative
+      - smoke
+    severity: normal
+    description: 密码为空，预期返回密码不能为空提示
+    request:
+      accounts: "${USERNAME}"
+      pwd: ""
+      type: username
+    expect:
+      code: -1
+      msg: 密码不能为空
+
+  - case_id: REGISTER_003
+    case: 用户名和密码都为空
+    tags:
+      - register
+      - negative
+    severity: minor
+    description: 用户名和密码都为空，预期返回账号不能为空提示
+    request:
+      accounts: ""
+      pwd: ""
+      type: username
+    expect:
+      code: -1
+      msg: 账号不能为空
+
+  - case_id: REGISTER_004
+    case: 重复用户名
+    tags:
+      - register
+      - negative
+    severity: normal
+    description: 重复用户名，预期返回用户名已存在提示
+    request:
+      accounts: "${USERNAME}"
+      pwd: "${PASSWORD}"
+      type: username
+    expect:
+      code: -10
+      msg: 账号已存在
+
+  - case_id: REGISTER_005
+    case: 用户名和密码都正确
+    tags:
+      - register
+      - smoke
+    severity: critical
+    description: 用户名和密码都正确，预期返回注册成功提示
+    request:
+      accounts: "${USERNAME}"
+      pwd: "${PASSWORD}"
+      type: username
+    expect:
+      code: 0
+      msg: 注册成功
