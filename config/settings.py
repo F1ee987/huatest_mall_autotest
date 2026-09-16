@@ -6,6 +6,8 @@
 @Date   :2026/9/13 21:40
 """
 import os
+import random
+import string
 from pathlib import Path
 from typing import Any, Dict, Mapping
 from dotenv import load_dotenv
@@ -31,6 +33,10 @@ HEADERS: dict[str, str] = {
     "x-requested-with": "XMLHttpRequest",
 }
 
+def generate_random_username(length: int = 8) -> str:
+    """生成随机用户名"""
+    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
+
 def replace_env_vars(data: Mapping[str, Any]) -> Dict[str, str]:
     """
     递归替换字典中的环境变量占位符。
@@ -46,6 +52,7 @@ def replace_env_vars(data: Mapping[str, Any]) -> Dict[str, str]:
     env_map: Dict[str, str | None] = {
         "PASSWORD": PASSWORD,
         "WRONG_PASSWORD": WRONG_PASSWORD,
+        "random_username": generate_random_username(),
     }
 
     result: Dict[str, Any] = {}

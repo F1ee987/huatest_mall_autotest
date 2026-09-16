@@ -69,7 +69,7 @@ register:
     severity: critical
     description: 用户名和密码都正确，预期返回注册成功提示
     request:
-      accounts: "${USERNAME}"
+      accounts: "${random_username}"
       pwd: "${PASSWORD}"
       type: username
     expect:
