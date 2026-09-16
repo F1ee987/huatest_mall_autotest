@@ -2,7 +2,7 @@ from json import JSONDecodeError
 import allure
 import pytest
 from requests import Response
-from utils import AutoLoader, ApiClient, set_allure_dynamic
+from utils import AutoLoader, ApiClient, set_allure_dynamic, attach_request, attach_response, attach_expect
 from config.settings import LOGIN_URL, replace_env_vars, HEADERS
 
 try:
@@ -30,16 +30,20 @@ class TestLogin:
 
         with allure.step("发送登录请求"):
             request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
+            attach_request(LOGIN_URL, request_data, HEADERS)
+
             resp: Response = api_client.post(LOGIN_URL, headers=HEADERS, data=request_data)
             assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
 
             try:
                 result = resp.json()
+                attach_response(resp.status_code, result)
             except JSONDecodeError:
                 pytest.fail("响应内容不是合法的 JSON 格式")
 
         with allure.step("校验登录返回结果"):
             expect: dict[str, str] = case.get('expect')
+            attach_expect(expect)
             assert result.get("code") == expect.get("code"), (
                 f"登录状态码校验失败：预期 {expect.get('code')}，实际 {result.get('code')}"
             )

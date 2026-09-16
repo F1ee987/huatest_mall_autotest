@@ -1,6 +1,8 @@
 """Allure 动态属性设置工具"""
-from typing import Any
+import json
+from typing import Any, Mapping
 import allure
+
 
 def set_allure_dynamic(
     case: dict[str, Any],
@@ -29,3 +31,62 @@ def set_allure_dynamic(
 
     allure.dynamic.severity(case.get("severity") or default_severity)
     allure.dynamic.description(case.get("description") or default_description)
+
+
+def attach_request(
+    url: str,
+    request_data: dict[str, Any],
+    headers: Mapping[str, str] | None = None,
+) -> None:
+    """
+    附加请求信息到 Allure 报告
+
+    Args:
+        url: 请求 URL
+        request_data: 请求参数
+        headers: 请求头
+    """
+    payload: dict[str, Any] = {
+        "url": url,
+        "params": request_data,
+    }
+    if headers:
+        payload["headers"] = dict(headers)
+    allure.attach(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        name="请求信息",
+        attachment_type=allure.attachment_type.JSON,
+    )
+
+
+def attach_response(
+    status_code: int,
+    response_data: dict[str, Any] | str,
+) -> None:
+    """
+    附加响应信息到 Allure 报告
+
+    Args:
+        status_code: HTTP 状态码
+        response_data: 响应数据（字典或字符串）
+    """
+    payload: dict[str, Any] = {"status_code": status_code, "body": response_data}
+    allure.attach(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        name="响应信息",
+        attachment_type=allure.attachment_type.JSON,
+    )
+
+
+def attach_expect(expect: dict[str, Any]) -> None:
+    """
+    附加预期结果到 Allure 报告
+
+    Args:
+        expect: 预期结果字典
+    """
+    allure.attach(
+        json.dumps(expect, ensure_ascii=False, indent=2),
+        name="预期结果",
+        attachment_type=allure.attachment_type.JSON,
+    )
