@@ -7,7 +7,7 @@
 """
 import requests
 from requests import Response
-from typing import Optional
+from typing import Optional, Any
 
 class ApiClient:
     """基础 HTTP API 客户端封装，支持单次请求和 Session 复用。"""
@@ -24,7 +24,7 @@ class ApiClient:
             requests.Session() if use_session else None
         )
 
-    def _request(self, method: str, url: str, **kwargs) -> Optional[Response]:
+    def _request(self, method: str, url: str, **kwargs: Any) -> Optional[Response]:
         """
         发送 HTTP 请求的统一入口。
 
@@ -42,7 +42,7 @@ class ApiClient:
             return self.__session.request(method, url, **kwargs)
         return requests.request(method, url, **kwargs)
 
-    def get(self, url: str, **kwargs) -> Optional[Response]:
+    def get(self, url: str, **kwargs: Any) -> Optional[Response]:
         """
         发送 GET 请求。
 
@@ -52,7 +52,7 @@ class ApiClient:
         """
         return self._request("GET", url, **kwargs)
 
-    def post(self, url: str, **kwargs) -> Optional[Response]:
+    def post(self, url: str, **kwargs: Any) -> Optional[Response]:
         """
         发送 POST 请求。
 
@@ -88,3 +88,19 @@ class ApiClient:
         """
         if self.__session:
             self.__session.close()
+
+if __name__ == '__main__':
+    from config.settings import REGISTER_URL
+    client = ApiClient(use_session=True)
+    response = client.post(REGISTER_URL, json={
+        "accounts": "sgsdx",
+        "pwd": "1",
+        "type": "username"
+    },headers= {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/58.0.3029.110 Safari/537.3",
+        "x-requested-with": "XMLHttpRequest",
+    })
+    if response.status_code == 200:
+        print(response.json())

@@ -8,7 +8,8 @@
 try:
     from .loaders import AutoLoader
     from .api_client import ApiClient
+    from .allure_utils import set_allure_dynamic
 except ImportError as e:
     raise ImportError(f"无法导入数据加载模块: {e}") from e
 
-__all__ = ["AutoLoader", "ApiClient"]
+__all__ = ["AutoLoader", "ApiClient", "set_allure_dynamic"]

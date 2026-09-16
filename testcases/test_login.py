@@ -3,7 +3,7 @@ import allure
 import pytest
 from requests import Response
 
-from utils import AutoLoader, ApiClient
+from utils import AutoLoader, ApiClient, set_allure_dynamic
 from config.settings import LOGIN_URL, replace_env_vars
 
 try:
@@ -27,13 +27,7 @@ class TestLogin:
     )
     def test_login(self, case_id: str, api_client: ApiClient):
         case: dict[str, dict] = case_map[case_id]
-        #----------------------动态设置allure动态属性-------------------------------
-        allure.dynamic.title(f"{case.get('case_id','unknown')}:{case.get('case', 'unknown')}"
-        )
-        for tag in case.get("tags", {}):
-            allure.dynamic.tag(tag)
-        allure.dynamic.severity(case.get("severity", "unknown"))
-        allure.dynamic.description(case.get("description", "无"))
+        set_allure_dynamic(case)
 
         with allure.step("发送登录请求"):
             try:
