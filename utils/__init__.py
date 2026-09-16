@@ -13,4 +13,4 @@ try:
 except ImportError as e:
     raise ImportError(f"无法导入数据加载模块: {e}") from e
 
-__all__ = ["AutoLoader", "ApiClient", "set_allure_dynamic", "attach_request", "attach_response", "attach_expect"]
+__all__ = ["AutoLoader", "ApiClient", "set_allure_dynamic", "attach_request", "attach_response", "attach_expect", "Logger"]

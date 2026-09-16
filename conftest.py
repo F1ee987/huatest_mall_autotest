@@ -5,10 +5,9 @@
 @Author :zhousha
 @Date   :2026/9/12 20:38
 """
-from utils import ApiClient
+from utils import ApiClient, Logger
 import pytest
-from typing import Generator
-from utils import Logger
+from typing import Generator, Any
 
 @pytest.fixture(scope='function')
 def api_client() -> Generator[ApiClient, None, None]:
@@ -24,7 +23,7 @@ def api_client() -> Generator[ApiClient, None, None]:
         client.close()
 
 @pytest.fixture(scope='function')
-def logger() -> Logger:
+def logger() -> Generator[Logger]:
     """
     提供 Logger 实例。
 
