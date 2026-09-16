@@ -7,7 +7,7 @@
 """
 from utils import ApiClient, Logger
 import pytest
-from typing import Generator, Any
+from typing import Generator
 
 @pytest.fixture(scope='function')
 def api_client() -> Generator[ApiClient, None, None]:
