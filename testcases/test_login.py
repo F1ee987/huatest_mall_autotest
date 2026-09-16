@@ -17,7 +17,7 @@ except (FileNotFoundError, KeyError, Exception):
     _data_loaded = False
 
 @pytest.mark.skipif(not _data_loaded, reason="数据文件缺失或格式错误")
-@allure.story("登录测试")
+@allure.epic("登录模块")
 class TestLogin:
     @pytest.mark.parametrize(
         "case_id",
@@ -30,26 +30,34 @@ class TestLogin:
 
         with allure.step("发送登录请求"):
             request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
-            attach_request(LOGIN_URL, request_data, HEADERS)
 
             resp: Response = api_client.post(LOGIN_URL, headers=HEADERS, data=request_data)
-            assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
+            try:
+                assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
+            except AssertionError:
+                attach_request(LOGIN_URL, request_data, HEADERS)
+                attach_response(resp.status_code, resp.text)
+                raise
 
             try:
                 result = resp.json()
-                attach_response(resp.status_code, result)
             except JSONDecodeError:
                 pytest.fail("响应内容不是合法的 JSON 格式")
 
         with allure.step("校验登录返回结果"):
             expect: dict[str, str] = case.get('expect')
-            attach_expect(expect)
-            assert result.get("code") == expect.get("code"), (
-                f"登录状态码校验失败：预期 {expect.get('code')}，实际 {result.get('code')}"
-            )
-            assert result.get("msg") == expect.get("msg"), (
-                f"登录提示信息校验失败：预期 '{expect.get('msg')}'，实际 '{result.get('msg')}'"
-            )
+            try:
+                assert result.get("code") == expect.get("code"), (
+                    f"登录状态码校验失败：预期 {expect.get('code')}，实际 {result.get('code')}"
+                )
+                assert result.get("msg") == expect.get("msg"), (
+                    f"登录提示信息校验失败：预期 '{expect.get('msg')}'，实际 '{result.get('msg')}'"
+                )
+            except AssertionError:
+                attach_request(LOGIN_URL, request_data, HEADERS)
+                attach_response(resp.status_code, result)
+                attach_expect(expect)
+                raise
 
         if result.get("code") == 0:
             with allure.step("保存登录会话 Cookie"):
