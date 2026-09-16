@@ -2,9 +2,8 @@ from json import JSONDecodeError
 import allure
 import pytest
 from requests import Response
-
 from utils import AutoLoader, ApiClient, set_allure_dynamic
-from config.settings import LOGIN_URL, replace_env_vars
+from config.settings import LOGIN_URL, replace_env_vars, HEADERS
 
 try:
     loader: AutoLoader = AutoLoader()
@@ -30,35 +29,28 @@ class TestLogin:
         set_allure_dynamic(case)
 
         with allure.step("发送登录请求"):
+            request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
+            resp: Response = api_client.post(LOGIN_URL, headers=HEADERS, data=request_data)
+            assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
+
             try:
-                headers: dict[str, str] = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                                  "Chrome/58.0.3029.110 Safari/537.3",
-                    "x-requested-with": "XMLHttpRequest",
-                }
-                # 替换请求数据中的环境变量占位符
-                request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
-                resp: Response = api_client.post(LOGIN_URL, headers=headers, data=request_data)
-                assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"
                 result = resp.json()
             except JSONDecodeError:
                 pytest.fail("响应内容不是合法的 JSON 格式")
 
-        expect: dict[str, str] = case.get('expect')
-
         with allure.step("校验登录返回结果"):
+            expect: dict[str, str] = case.get('expect')
             assert result.get("code") == expect.get("code"), (
                 f"登录状态码校验失败：预期 {expect.get('code')}，实际 {result.get('code')}"
             )
             assert result.get("msg") == expect.get("msg"), (
                 f"登录提示信息校验失败：预期 '{expect.get('msg')}'，实际 '{result.get('msg')}'"
             )
+
         if result.get("code") == 0:
-            with allure.step("保存登录会话服务端 Cookie"):
+            with allure.step("保存登录会话 Cookie"):
                 cookie_str: str = api_client.cookie_str
                 assert cookie_str, "登录成功但 Cookie 为空"
-
                 allure.attach(
                     cookie_str,
                     name="服务端 Cookie（PHPSESSID）",

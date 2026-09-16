@@ -2,7 +2,7 @@
 import allure
 
 
-def set_allure_dynamic(case: dict):
+def set_allure_dynamic(case: dict) -> None:
     """
     动态设置 Allure 测试属性
     

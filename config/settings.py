@@ -23,6 +23,13 @@ BASE_URL: str = AutoLoader().load(file_path="config/conf.json").get("BASE_URL")
 LOGIN_URL: str = f"{BASE_URL}?s=/index/user/login.html"
 REGISTER_URL: str = f"{BASE_URL}?s=/index/user/reg.html"
 
+# 请求头
+HEADERS: dict[str, str] = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/58.0.3029.110 Safari/537.3",
+    "x-requested-with": "XMLHttpRequest",
+}
 
 def replace_env_vars(data: Mapping[str, Any]) -> Dict[str, str]:
     """

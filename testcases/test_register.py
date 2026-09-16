@@ -6,8 +6,10 @@
 @Date   :2026/9/16 18:53
 """
 import allure
+from requests import Response
 from utils import AutoLoader, ApiClient, set_allure_dynamic
 import pytest
+from config.settings import REGISTER_URL, replace_env_vars, HEADERS
 
 try:
     loader = AutoLoader()
@@ -32,4 +34,19 @@ class TestRegister:
         """
         case: dict[str, dict] = case_map[case_id]
         set_allure_dynamic(case)
-        assert case_id
+
+        with allure.step("发起注册请求"):
+            request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
+            resp: Response = api_client.post(REGISTER_URL, json=request_data, headers=HEADERS)
+
+        with allure.step("验证响应状态"):
+            assert resp.status_code == 200, f"注册请求失败，状态码为{resp.status_code}"
+            result = resp.json()
+            assert result, f"注册请求返回的数据为空"
+
+        with allure.step("验证注册结果"):
+            expect: dict[str, str] = case.get('expect')
+            assert result.get('code') == expect.get('code'), \
+                f"注册结果错误，预期code={expect.get('code')}，实际code={result.get('code')}"
+            assert result.get('msg') == expect.get('msg'), \
+                f"注册结果错误，预期msg={expect.get('msg')}，实际msg={result.get('msg')}"
