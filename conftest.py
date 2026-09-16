@@ -8,6 +8,7 @@
 from utils import ApiClient
 import pytest
 from typing import Generator
+from utils import Logger
 
 @pytest.fixture(scope='function')
 def api_client() -> Generator[ApiClient, None, None]:
@@ -21,3 +22,16 @@ def api_client() -> Generator[ApiClient, None, None]:
         yield client
     finally:
         client.close()
+
+@pytest.fixture(scope='function')
+def logger() -> Logger:
+    """
+    提供 Logger 实例。
+
+    使用 yield 确保测试结束后正确释放 Logger 资源。
+    """
+    logger_instance: Logger = Logger(__file__)
+    try:
+        yield logger_instance
+    finally:
+        logger_instance.close()
