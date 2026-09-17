@@ -4,12 +4,27 @@
 提供 YAML / JSON / CSV 文件的读取能力，供测试用例和配置加载使用。
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 import yaml
 import json
 import csv
 from abc import ABC, abstractmethod
 from pathlib import Path
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class CaseData:
+    """
+    测试用例数据结构
+
+    Args:
+        loaded: 是否成功加载用例数据
+        cases: 测试用例列表
+        case_map: case_id 到用例的映射
+    """
+    loaded: bool
+    cases: List[Dict[str, Any]]
+    case_map: Dict[str, Dict[str, Any]]
 
 class DataLoader(ABC):
     """数据加载基类"""
@@ -73,6 +88,16 @@ class YamlLoader(DataLoader):
         with open(file_path, mode='r', encoding='utf-8') as f:
             return yaml.safe_load(f)
 
+    def load_cases(self, file_path: str) -> CaseData:
+        """
+        加载测试用例数据
+        Args:
+            file_path (str): 测试用例文件路径
+
+        Returns:
+            CaseData: 测试用例数据结构
+        """
+
 class JsonLoader(DataLoader):
     """负责加载 JSON 文件"""
     def _do_load(self, file_path: str) -> Any:
@@ -105,6 +130,6 @@ class AutoLoader(DataLoader):
 
 if __name__ == '__main__':
     loader = AutoLoader()
-    data = loader.load('data/login.yaml').get('登录')
+    data = loader.load('data/login.yaml')
     for item in data:
         print(item)

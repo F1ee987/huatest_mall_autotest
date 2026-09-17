@@ -48,7 +48,7 @@ class TestLogin:
                     pytest.fail("响应内容不是合法的 JSON 格式")
 
         with allure.step("校验登录返回结果"):
-            expect: dict[str, str] = case.get('expect')
+            expect: dict[str, str] = case.get('expect',{})
             try:
                 assert result.get("code") == expect.get("code"), (
                     f"登录状态码校验失败：预期 {expect.get('code')}，实际 {result.get('code')}"

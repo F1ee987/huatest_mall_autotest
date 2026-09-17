@@ -13,10 +13,10 @@ from config.settings import REGISTER_URL, replace_env_vars, HEADERS
 from typing import Optional
 
 try:
-    loader = AutoLoader()
-    register_cases = loader.load("data/register.yaml").get("register")
-    _loaded = True
-    case_map: dict[str, dict[str, dict[str, str]]] = {c["case_id"]: c for c in register_cases}
+    loader: AutoLoader = AutoLoader()
+    register_cases: list[dict[str, str]] = loader.load("data/register.yaml").get("register", [])
+    _loaded: bool = True
+    case_map: dict[str, dict[str, str]] = {c["case_id"]: c for c in register_cases}
 except (FileNotFoundError, KeyError):
     register_cases = []  # 假设注册用例为空
     case_map = {}
@@ -34,7 +34,7 @@ class TestRegister:
         """
         测试注册成功
         """
-        case: dict[str, dict[str, str]] = case_map[case_id]
+        case: dict[str, str] = case_map[case_id]
         set_allure_dynamic(case)
 
         with allure.step("发起注册请求"):
