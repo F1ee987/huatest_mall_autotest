@@ -29,6 +29,9 @@ class CaseData:
 class DataLoader(ABC):
     """数据加载基类"""
 
+    def __init__(self, file_path: str|None = None):
+        self.file_path: str = file_path
+
     @staticmethod
     def _resolve_path(file_path: str) -> Path:
         """解析文件路径，返回实际存在的绝对路径"""
@@ -65,12 +68,12 @@ class DataLoader(ABC):
         """子类实现具体的加载逻辑"""
         pass
 
-    def load(self, file_path: str) -> Any:
+    def load(self, file_path: str|None = None) -> Any:
         """
         公共入口：加载数据
 
         Args:
-            file_path (str): 文件路径
+            file_path (str|None): 文件路径
 
         Returns:
             Any: 加载的数据
@@ -79,6 +82,8 @@ class DataLoader(ABC):
             FileNotFoundError: 文件不存在时抛出
             ValueError: 文件格式不正确时抛出
         """
+        if file_path:
+            self.file_path = file_path
         resolved = self._resolve_path(file_path)
         return self._do_load(str(resolved))
 
@@ -112,11 +117,11 @@ class CsvLoader(DataLoader):
 
 class AutoLoader(DataLoader):
     """根据文件名后缀自动加载数据"""
-    _loaders: Dict[str, DataLoader] = {
-        ".yaml": YamlLoader(),
-        ".yml": YamlLoader(),
-        ".json": JsonLoader(),
-        ".csv": CsvLoader()
+    _loaders: Dict[str, type[DataLoader]] = {
+        ".yaml": YamlLoader,
+        ".yml": YamlLoader,
+        ".json": JsonLoader,
+        ".csv": CsvLoader
     }
 
     def _do_load(self, file_path: str) -> Any:
@@ -126,10 +131,9 @@ class AutoLoader(DataLoader):
                 f"不支持的文件格式: {suffix}，"
                 f"仅支持: {list(self._loaders.keys())}"
             )
-        return self._loaders[suffix].load(file_path)
+        return self._loaders[suffix](file_path)
 
 if __name__ == '__main__':
     loader = AutoLoader()
     data = loader.load('data/login.yaml')
-    for item in data:
-        print(item)
+    print(data)
