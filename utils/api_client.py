@@ -62,6 +62,14 @@ class ApiClient:
         """
         return self._request("POST", url, **kwargs)
 
+    def set_headers(self, headers: dict) -> None:
+        """
+        更新请求头，不覆盖已有默认头。
+        :param headers: 需要更新的请求头字典
+        """
+        if self.__session:
+            self.__session.headers.update(headers)
+
     @property
     def cookie_str(self) -> str:
         """

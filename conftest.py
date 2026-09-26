@@ -8,7 +8,7 @@
 from utils import ApiClient, Logger, AutoLoader
 import pytest
 from typing import Generator, Any
-from config.settings import LOGIN_URL
+from config.settings import LOGIN_URL, HEADERS, replace_env_vars
 
 #-------------------私有辅助函数-------------------
 _loader = AutoLoader()
@@ -16,13 +16,17 @@ _loader = AutoLoader()
 def _authorized_user() -> dict[str, Any]:
     """
     返回一个成功登录的用户信息字典。
-    :return:
+    :return: 用户信息字典
+    :raises ValueError: 如果未找到正常登录的用户信息。
     """
-    user_info = _loader.load("data/login.yaml").get("login")
-    return user_info
+    user_infos = _loader.load("data/login.yaml").get("login")
+    for user_info in user_infos:
+        if user_info.get('case') == '正常登录':
+            success_user = user_info
+            return replace_env_vars(success_user)
+    raise ValueError("未找到正常登录的用户信息")
 
 print(_authorized_user())
-
 #-------------------fixture----------------------
 
 @pytest.fixture(scope='function')
@@ -36,7 +40,7 @@ def logged_in() -> Generator[ApiClient]:
     client.close()
 
 @pytest.fixture(scope='function')
-def api_client() -> Generator[ApiClient, None, None]:
+def api_client() -> Generator[ApiClient]:
     """
     提供带 Session 的 ApiClient 实例。
 
@@ -60,3 +64,15 @@ def logger() -> Generator[Logger]:
         yield logger_instance
     finally:
         logger_instance.close()
+
+@pytest.fixture(scope='function')
+def successful_login(api_client: ApiClient) -> Generator[ApiClient]:
+    """
+    使用已登录的用户 ApiClient 实例进行登录操作。
+    """
+    _user = _authorized_user()
+    resp = api_client.post(LOGIN_URL, json=_user.get('request'), headers=HEADERS)
+    if resp.json().get('code') != _user.get('expect').get('code'):
+        pytest.fail("登录失败")
+    yield api_client
+    api_client.close()
