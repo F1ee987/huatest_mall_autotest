@@ -19,7 +19,9 @@ def _authorized_user() -> dict[str, Any]:
     :return:
     """
     user_info = _loader.load("data/login.yaml").get("login")
+    return user_info
 
+print(_authorized_user())
 
 #-------------------fixture----------------------
 

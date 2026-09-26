@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import yaml
 import json
 import csv
-from abc import ABC, abstractmethod
+from abc import ABC
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -63,10 +63,45 @@ class DataLoader(ABC):
         """获取文件后缀（小写，带点）"""
         return Path(file_path).suffix.lower()
 
-    @abstractmethod
     def _do_load(self, file_path: str) -> Any:
         """子类实现具体的加载逻辑"""
         pass
+
+    def load_cases(self, file_path: str) -> CaseData:
+        """
+        加载测试用例数据（基类通用实现）
+
+        从数据文件中提取用例：优先取第一个 list 类型的顶级值作为用例列表，
+        要求每条用例必须包含 case_id 字段，否则视为格式错误。
+
+        Args:
+            file_path (str): 测试用例文件路径
+
+        Returns:
+            CaseData: 测试用例数据结构
+
+        Raises:
+            FileNotFoundError: 文件不存在时抛出
+        """
+        data = self.load(file_path)
+        if not isinstance(data, dict):
+            return CaseData(loaded=False, cases=[], case_map={})
+
+        cases: List[Dict[str, Any]] = []
+        for value in data.values():
+            if isinstance(value, list):
+                cases = value
+                break
+
+        valid_cases: List[Dict[str, Any]] = []
+        for case in cases:
+            if isinstance(case, dict) and "case_id" in case:
+                valid_cases.append(case)
+            else:
+                return CaseData(loaded=False, cases=[], case_map={})
+
+        case_map: Dict[str, Dict[str, Any]] = {c["case_id"]: c for c in valid_cases}
+        return CaseData(loaded=True, cases=valid_cases, case_map=case_map)
 
     def load(self, file_path: str|None = None) -> Any:
         """
@@ -92,16 +127,6 @@ class YamlLoader(DataLoader):
     def _do_load(self, file_path: str) -> Any:
         with open(file_path, mode='r', encoding='utf-8') as f:
             return yaml.safe_load(f)
-
-    def load_cases(self, file_path: str) -> CaseData:
-        """
-        加载测试用例数据
-        Args:
-            file_path (str): 测试用例文件路径
-
-        Returns:
-            CaseData: 测试用例数据结构
-        """
 
 class JsonLoader(DataLoader):
     """负责加载 JSON 文件"""
@@ -131,9 +156,29 @@ class AutoLoader(DataLoader):
                 f"不支持的文件格式: {suffix}，"
                 f"仅支持: {list(self._loaders.keys())}"
             )
-        return self._loaders[suffix](file_path)
+        return self._loaders[suffix](file_path).load(file_path)
+
+    def load_cases(self, file_path: str) -> CaseData:
+        """
+        加载测试用例数据
+
+        自动根据文件后缀路由到对应类型的 Loader，
+        返回第一个 list 类型的顶级值作为用例列表，要求每条用例必须包含 case_id。
+
+        Args:
+            file_path (str): 测试用例文件路径
+
+        Returns:
+            CaseData: 测试用例数据结构
+        """
+        suffix = self._get_suffix(file_path)
+        if suffix not in self._loaders:
+            raise ValueError(
+                f"不支持的文件格式: {suffix}，"
+                f"仅支持: {list(self._loaders.keys())}"
+            )
+        return self._loaders[suffix](file_path).load_cases(file_path)
 
 if __name__ == '__main__':
-    loader = AutoLoader()
-    data = loader.load('data/login.yaml')
-    print(data)
+    cases = AutoLoader().load_cases('data/login.yaml')
+    print(cases.loaded, len(cases.cases), list(cases.case_map.keys()))

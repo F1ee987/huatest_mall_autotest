@@ -13,12 +13,16 @@ from config.settings import REGISTER_URL, replace_env_vars, HEADERS
 from typing import Optional
 
 try:
-    loader: AutoLoader = AutoLoader()
-    register_cases: list[dict[str, str]] = loader.load("data/register.yaml").get("register", [])
-    _loaded: bool = True
-    case_map: dict[str, dict[str, str]] = {c["case_id"]: c for c in register_cases}
-except (FileNotFoundError, KeyError):
-    register_cases = []  # 假设注册用例为空
+    _loader = AutoLoader()
+    _case_data = _loader.load_cases("data/register.yaml")
+    if _case_data.loaded:
+        register_cases = list(_case_data.cases)
+        case_map = _case_data.case_map
+        _loaded = True
+    else:
+        raise ValueError("注册用例数据格式错误")
+except (FileNotFoundError, KeyError, ValueError):
+    register_cases = []
     case_map = {}
     _loaded = False
 

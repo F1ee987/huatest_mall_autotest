@@ -7,13 +7,15 @@ from config.settings import LOGIN_URL, replace_env_vars, HEADERS
 from typing import Optional
 
 try:
-    loader: AutoLoader = AutoLoader()
-    login_cases: list[dict[str,str]] = loader.load('data/login.yaml').get('login', [])
-    if not login_cases:
-        raise KeyError("登录数据缺失或格式错误")
-    _data_loaded: bool = True
-    case_map: dict[str, dict[str, str]] = {c["case_id"]: c for c in login_cases}
-except (FileNotFoundError, KeyError, Exception):
+    _loader = AutoLoader()
+    _case_data = _loader.load_cases("data/login.yaml")
+    if _case_data.loaded:
+        login_cases = list(_case_data.cases)
+        case_map = _case_data.case_map
+        _data_loaded = True
+    else:
+        raise ValueError("登录用例数据格式错误")
+except (FileNotFoundError, KeyError, ValueError):
     login_cases = []
     case_map = {}
     _data_loaded = False
