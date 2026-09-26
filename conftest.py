@@ -47,6 +47,7 @@ def api_client() -> Generator[ApiClient]:
     使用 yield 确保测试结束后正确释放 Session 资源。
     """
     client: ApiClient = ApiClient(use_session=True)
+    client.set_headers(HEADERS)  # 设置请求头
     try:
         yield client
     finally:
@@ -71,7 +72,7 @@ def successful_login(api_client: ApiClient) -> Generator[ApiClient]:
     使用已登录的用户 ApiClient 实例进行登录操作。
     """
     _user = _authorized_user()
-    resp = api_client.post(LOGIN_URL, json=_user.get('request'), headers=HEADERS)
+    resp = api_client.post(LOGIN_URL, json=_user.get('request'))
     if resp.json().get('code') != _user.get('expect').get('code'):
         pytest.fail("登录失败")
     yield api_client

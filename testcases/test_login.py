@@ -35,7 +35,7 @@ class TestLogin:
         with allure.step("发送登录请求"):
             request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
 
-            resp: Optional[Response] = api_client.post(LOGIN_URL, headers=HEADERS, data=request_data)
+            resp: Optional[Response] = api_client.post(LOGIN_URL, data=request_data)
             if resp:
                 try:
                     assert resp.status_code == 200, f"登录请求失败，状态码：{resp.status_code}"

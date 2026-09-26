@@ -44,7 +44,7 @@ class TestRegister:
         with allure.step("发起注册请求"):
             request_data: dict[str, str] = replace_env_vars(case.get('request', {}))
 
-            resp: Optional[Response] = api_client.post(REGISTER_URL, json=request_data, headers=HEADERS)
+            resp: Optional[Response] = api_client.post(REGISTER_URL, json=request_data)
 
         if resp:
             with allure.step("验证响应状态"):
