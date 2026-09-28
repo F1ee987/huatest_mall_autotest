@@ -98,11 +98,11 @@ class ApiClient:
             self.__session.close()
 
 if __name__ == '__main__':
-    from config.settings import REGISTER_URL
+    from config.settings import LOGIN_URL, CART_URL
     client = ApiClient(use_session=True)
-    response = client.post(REGISTER_URL, json={
-        "accounts": "sgsdx",
-        "pwd": "1",
+    response = client.post(LOGIN_URL, json={
+        "accounts": "huace_xm",
+        "pwd": "123456",
         "type": "username"
     },headers= {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -110,4 +110,5 @@ if __name__ == '__main__':
                       "Chrome/58.0.3029.110 Safari/537.3",
         "x-requested-with": "XMLHttpRequest",
     })
+    print(client.get(CART_URL).text)
     

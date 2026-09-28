@@ -24,7 +24,9 @@ WRONG_PASSWORD: str | None = os.getenv("WRONG_PASSWORD")
 BASE_URL: str = AutoLoader().load(file_path="config/conf.json").get("BASE_URL")
 LOGIN_URL: str = f"{BASE_URL}?s=/index/user/login.html"
 REGISTER_URL: str = f"{BASE_URL}?s=/index/user/reg.html"
+CART_URL: str = f"{BASE_URL}?s=/index/cart/index.html"
 ADD_CART_URL: str = f"{BASE_URL}?s=/index/cart/save.html"
+DELETE_CART_URL: str = f"{BASE_URL}?s=/index/cart/delete.html"
 
 # 请求头
 HEADERS: dict[str, str] = {
