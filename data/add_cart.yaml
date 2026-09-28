@@ -1,0 +1,55 @@
+add_cart:
+    - case_id: ADD_CART_001
+      case: "成功加入购物车"
+      severity: critical
+      description: 输入正确的商品ID和库存数量加入购物车，预期返回成功
+      tags:
+          - smoke
+          - add_cart
+      goods:
+          goods_id: 1
+          stock: 1
+      expect:
+          code: 0
+          msg: "成功"
+
+    - case_id: ADD_CART_002
+      case: "库存不足"
+      severity: normal
+      description: 输入超出库存数量的参数加入购物车，预期返回库存不足
+      tags:
+          - smoke
+          - add_cart
+      goods:
+          goods_id: 2
+          stock: 8888888888888
+      expect:
+          code: -1
+          msg: "库存不足"
+
+    - case_id: ADD_CART_003
+      case: "商品不存在"
+      severity: normal
+      description: 输入不存在的商品ID加入购物车，预期返回商品不存在
+      tags:
+          - smoke
+          - add_cart
+      goods:
+          goods_id: -1
+          stock: 1
+      expect:
+          code: -2
+          msg: "不存在"
+
+delete_cart:
+    - case_id: DELETE_CART_001
+      case: "删除已存在的购物车记录"
+      severity: critical
+      description: 删除已存在的购物车记录ID，预期返回删除成功
+      tags:
+          - smoke
+          - delete_cart
+      id: 1000
+      expect:
+          code: 0
+          msg: "删除成功"
