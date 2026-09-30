@@ -27,6 +27,7 @@ REGISTER_URL: str = f"{BASE_URL}?s=/index/user/reg.html"
 CART_URL: str = f"{BASE_URL}?s=/index/cart/index.html"
 ADD_CART_URL: str = f"{BASE_URL}?s=/index/cart/save.html"
 DELETE_CART_URL: str = f"{BASE_URL}?s=/index/cart/delete.html"
+PAY_URL: str = f"{BASE_URL}?s=/index/buy/add.html"
 
 # 请求头
 HEADERS: dict[str, str] = {
