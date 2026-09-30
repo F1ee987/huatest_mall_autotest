@@ -180,5 +180,10 @@ class AutoLoader(DataLoader):
         return self._loaders[suffix](file_path).load_cases(file_path)
 
 if __name__ == '__main__':
-    cases = AutoLoader().load_cases('data/login.yaml')
-    print(cases.loaded, len(cases.cases), list(cases.case_map.keys()))
+    _loader = AutoLoader()
+    cases = _loader.load('data/cart_data.yaml')
+    add_cart_cases = cases.get("add_cart")
+    delete_cart_cases = cases.get("delete_cart")
+    print(add_cart_cases)
+    print('-'*20)
+    print(delete_cart_cases)

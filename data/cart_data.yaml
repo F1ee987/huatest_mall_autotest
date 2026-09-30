@@ -11,7 +11,7 @@ add_cart:
           stock: 1
       expect:
           code: 0
-          msg: "成功"
+          msg: "加入成功"
 
     - case_id: ADD_CART_002
       case: "库存不足"
@@ -39,17 +39,29 @@ add_cart:
           stock: 1
       expect:
           code: -2
-          msg: "不存在"
+          msg: "商品不存在或已删除"
 
 delete_cart:
     - case_id: DELETE_CART_001
       case: "删除已存在的购物车记录"
       severity: critical
-      description: 删除已存在的购物车记录ID，预期返回删除成功
+      description: 删除由前置加车测试已添加的购物车记录（按 goods_id 反查 id），预期返回删除成功
       tags:
           - smoke
           - delete_cart
-      id: 1000
+      goods_id: 1
       expect:
           code: 0
           msg: "删除成功"
+
+    - case_id: DELETE_CART_002
+      case: "删除不存在的购物车记录"
+      severity: normal
+      description: 使用一个不存在于当前购物车的 ID 删除，预期返回购物车记录不存在
+      tags:
+          - smoke
+          - delete_cart
+      id: -1
+      expect:
+          code: -100
+          msg: "不存在"

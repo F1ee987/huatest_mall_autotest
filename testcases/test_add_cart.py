@@ -5,106 +5,168 @@
 @Author :zhousha
 @Date   :2026/9/17 22:06
 """
+import json
 import pytest
-from config.settings import ADD_CART_URL, DELETE_CART_URL
+from config.settings import ADD_CART_URL, DELETE_CART_URL, CART_URL, HEADERS
 import allure
-from utils import ApiClient, attach_response
-from random import randint
+from utils import ApiClient, set_allure_dynamic, attach_request, attach_response, attach_expect, AutoLoader
 from typing import Any
 
+
+try:
+    _loader = AutoLoader()
+    _case_data = _loader.load_cases("data/cart_data.yaml")
+    if _case_data.loaded:
+        _case_map = _case_data.case_map
+        _loaded = True
+    else:
+        raise ValueError("购物车用例数据格式错误")
+except (FileNotFoundError, KeyError, ValueError):
+    _case_map = {}
+    _loaded = False
+
+# 把 case_map 按 case_id 前缀分组，作为本模块参数化的固定列表
+ADD_CART_IDS = [cid for cid in _case_map if cid.startswith("ADD_CART")]
+DELETE_CART_IDS = [cid for cid in _case_map if cid.startswith("DELETE_CART")]
+
+
+def _find_cart_id_by_goods(client: ApiClient, goods_id: int) -> int:
+    """通过查询 CART_URL 反查某 goods_id 对应购物车记录的 id。
+
+    兼容 data 字段是 list、dict{'list': [...]} 等情况（递归查找）。
+    未找到则 pytest.fail，并在断言信息里附上完整 body 便于排查。
+    """
+    resp = client.post(CART_URL)
+    assert resp is not None and resp.status_code == 200, "查询购物车列表接口请求失败"
+    body = resp.json()
+
+    def _walk(node: Any) -> Any:
+        if isinstance(node, list):
+            for item in node:
+                found = _walk(item)
+                if found is not None:
+                    return found
+        elif isinstance(node, dict):
+            if node.get("goods_id") == goods_id and "id" in node:
+                return node.get("id")
+            for value in node.values():
+                found = _walk(value)
+                if found is not None:
+                    return found
+        return None
+
+    cart_id = _walk(body.get("data")) if isinstance(body, dict) else None
+    if cart_id is None:
+        pytest.fail(
+            f"未找到 goods_id={goods_id} 的购物车记录, "
+            f"body={json.dumps(body, ensure_ascii=False)}"
+        )
+    return cart_id
+
+
+def _assert_cart_expect(
+    result: dict[str, Any],
+    expect: dict[str, Any],
+    url: str,
+    request_data: dict[str, Any],
+) -> None:
+    """统一的购物车接口断言辅助函数，断言失败时保留请求/响应/期望便于排查"""
+    try:
+        assert result.get("code") == expect.get("code"), \
+            f"结果错误，预期code={expect.get('code')}，实际code={result.get('code')}"
+        assert result.get("msg") == expect.get("msg"), \
+            f"结果错误，预期msg={expect.get('msg')}，实际msg={result.get('msg')}"
+    except AssertionError:
+        attach_request(url, request_data, HEADERS)
+        attach_response(200, result)
+        attach_expect(expect)
+        raise
+
+
+@pytest.mark.skipif(not _loaded, reason="购物车数据文件缺失或格式错误")
 @allure.epic("购物车模块")
 class TestAddCart:
+    """购物车测试类 - 数据驱动
+
+    - test_add_cart    ：参数化执行 data/cart_data.yaml 中所有 ADD_CART 用例
+    - test_delete_cart ：参数化执行 data/cart_data.yaml 中所有 DELETE_CART 用例
     """
-    购物车测试类
-    """
-    _successful_add_cart_dict: dict[str, Any] = {
-        "goods": {
-            "goods_id": randint(1, 10),
-            "stock": randint(1,2)
-        },
-        "expect": {
-            "code": 0,
-            "msg": "成功"
-        }
-    }
-    _nonexistent_goods_dict: dict[str, Any] = {
-        "goods": {
-            "goods_id": randint(-10, -1),
-            "stock": randint(1,2)
-        },
-        "expect": {
-            "code": -2,
-            "msg": "不存在"
-        }
-    }
-
-    _failed_add_cart_dict: dict[str, Any] = {
-        "goods": {
-            "goods_id": randint(1, 10),
-            "stock": 8888888888888
-        },
-        "expect": {
-            "code": -1,
-            "msg": "库存不足"
-        }
-    }
-
-    _delete_cart_dict: dict[str, Any] = {
-        "id": 4130,
-        "expect": {
-            "code": 0,
-            "msg": "删除成功"
-        }
-    }
-
-    _delete_nonexistent_cart_dict: dict[str, Any] = {
-        "id": 4130,
-        "expect": {
-            "code": -100,
-            "msg": "不存在"
-        }
-    }
-
 
     @pytest.mark.parametrize(
-        "goods, expect", [(_successful_add_cart_dict.get("goods"), _successful_add_cart_dict.get("expect")),
-                           (_failed_add_cart_dict.get("goods"), _failed_add_cart_dict.get("expect")),
-                          (_nonexistent_goods_dict.get("goods"), _nonexistent_goods_dict.get("expect"))
-                          ],
-        ids=["正向添加-库存充足-期望成功", "异常添加-库存不足-期望失败", "异常添加-商品不存在-期望失败"]
+        "case_id",
+        ADD_CART_IDS,
+        ids=lambda cid: f"{cid}_{_case_map[cid]['case']}",
     )
-    def test_add_cart(self, successful_login: ApiClient, goods: dict[str, int], expect: dict[str, int|str]) -> None:
-        """
-        测试加入购物车
-        """
-        allure.dynamic.title(f"加入购物车-商品ID:{goods['goods_id']},库存:{goods['stock']},预期:{expect['msg']}")
-        with allure.step("添加商品到购物车"):
-            resp = successful_login.post(ADD_CART_URL, data={"goods_id": goods.get("goods_id"), "stock": goods.get("stock")})
-            assert resp.status_code == 200, "添加商品到购物车接口请求失败"
-            assert resp.json()
-        with allure.step("验证商品是否成功加入购物车"):
-            body = resp.json()
-            attach_response(resp.status_code, body)
-            assert expect.get("code") == body.get("code") , "商品加入购物车接口返回错误码"
-            assert expect.get("msg") in body.get("msg") , "商品加入购物车接口返回错误信息"
+    def test_add_cart(self, case_id: str, successful_login: ApiClient):
+        """测试加入购物车"""
+        case: dict[str, Any] = _case_map[case_id]
+        set_allure_dynamic(case)
+
+        request_data: dict[str, Any] = case.get("goods", {})
+        with allure.step("发起加车请求"):
+            resp = successful_login.post(ADD_CART_URL, data=request_data)
+
+        assert resp is not None, "加车请求失败：未获取到响应"
+        with allure.step("验证响应状态与加车结果"):
+            try:
+                assert resp.status_code == 200, f"加车请求失败，状态码为{resp.status_code}"
+                result = resp.json()
+                assert result, "加车请求返回的数据为空"
+            except AssertionError:
+                attach_request(ADD_CART_URL, request_data, HEADERS)
+                attach_response(resp.status_code, resp.text)
+                raise
+            attach_response(resp.status_code, result)
+            expect: dict[str, Any] = case.get("expect", {})
+            _assert_cart_expect(result, expect, ADD_CART_URL, request_data)
 
     @pytest.mark.parametrize(
-        "category_id, expect", [(_delete_cart_dict.get("id"), _delete_cart_dict.get("expect")),
-                                (_delete_nonexistent_cart_dict.get("id"), _delete_nonexistent_cart_dict.get("expect")),
-                          ],
-        ids=["删除购物车商品"]
+        "case_id",
+        DELETE_CART_IDS,
+        ids=lambda cid: f"{cid}_{_case_map[cid]['case']}",
     )
-    def test_delete_cart(self, successful_login: ApiClient, category_id: int, expect: dict[str, int|str]) -> None:
+    def test_delete_cart(self, case_id: str, successful_login: ApiClient):
+        """从购物车删除商品
+
+        - case 含 goods_id 时：先实际调用加车接口确保购物车中有此商品，
+          再按 goods_id 反查真实 cart id 删除（不依赖参数化顺序）。
+        - case 含   id    时：直接显式删除（YAML 中通常写入不存在的负数 id）。
         """
-        从购物车删除商品
-        """
-        allure.dynamic.title(f"删除购物车商品-购物车ID:{category_id},预期:{expect['msg']}")
-        with allure.step("删除购物车商品"):
-            resp = successful_login.post(DELETE_CART_URL, data={"id": category_id})
-            assert resp.status_code == 200, "删除购物车商品接口请求失败"
-            assert resp.json()
-        with allure.step("验证商品是否成功从购物车删除"):
-            body = resp.json()
-            attach_response(resp.status_code, body)
-            assert expect.get("code") == body.get("code") , "删除商品接口返回错误码"
-            assert expect.get("msg") in body.get("msg") , "商品删除接口返回错误信息"
+        case: dict[str, Any] = _case_map[case_id]
+        set_allure_dynamic(case)
+
+        with allure.step("计算待删除的 cart_id"):
+            if "goods_id" in case:
+                goods_id: int = case["goods_id"]
+                with allure.step(f"前置调用加车接口，确保购物车中存在 goods_id={goods_id}"):
+                    add_resp = successful_login.post(
+                        ADD_CART_URL,
+                        data={"goods_id": goods_id, "stock": 1},
+                    )
+                    assert add_resp is not None and add_resp.status_code == 200, "加车请求失败"
+                    add_result = add_resp.json()
+                    assert add_result, "加车请求返回的数据为空"
+                with allure.step(f"反查 goods_id={goods_id} 对应的购物车记录 id"):
+                    cart_id: int = _find_cart_id_by_goods(successful_login, goods_id)
+            elif "id" in case:
+                cart_id = case["id"]
+            else:
+                pytest.fail(f"case {case_id} 缺少 goods_id 或 id 字段")
+
+        request_data = {"id": cart_id}
+        with allure.step(f"发起删除购物车请求 id={cart_id}"):
+            resp = successful_login.post(DELETE_CART_URL, data=request_data)
+
+        assert resp is not None, "删除购物车请求失败：未获取到响应"
+        with allure.step("验证响应状态与删除结果"):
+            try:
+                assert resp.status_code == 200, f"删除购物车请求失败，状态码为{resp.status_code}"
+                result = resp.json()
+                assert result, "删除购物车请求返回的数据为空"
+            except AssertionError:
+                attach_request(DELETE_CART_URL, request_data, HEADERS)
+                attach_response(resp.status_code, resp.text)
+                raise
+            attach_response(resp.status_code, result)
+            expect: dict[str, Any] = case.get("expect", {})
+            _assert_cart_expect(result, expect, DELETE_CART_URL, request_data)
