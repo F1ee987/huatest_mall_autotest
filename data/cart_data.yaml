@@ -64,4 +64,4 @@ delete_cart:
       id: -1
       expect:
           code: -100
-          msg: "不存在"
+          msg: "删除失败或资源不存在"

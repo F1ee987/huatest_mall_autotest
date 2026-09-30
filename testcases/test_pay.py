@@ -7,6 +7,7 @@
 """
 import allure
 import pytest
+from config.settings import PAY_URL
 
 @allure.epic("支付模块")
 class TestPay:

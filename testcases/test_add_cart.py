@@ -5,12 +5,12 @@
 @Author :zhousha
 @Date   :2026/9/17 22:06
 """
-import json
+import re
 import pytest
+from typing import Any, Optional
 from config.settings import ADD_CART_URL, DELETE_CART_URL, CART_URL, HEADERS
 import allure
 from utils import ApiClient, set_allure_dynamic, attach_request, attach_response, attach_expect, AutoLoader
-from typing import Any
 
 
 try:
@@ -33,35 +33,50 @@ DELETE_CART_IDS = [cid for cid in _case_map if cid.startswith("DELETE_CART")]
 def _find_cart_id_by_goods(client: ApiClient, goods_id: int) -> int:
     """通过查询 CART_URL 反查某 goods_id 对应购物车记录的 id。
 
-    兼容 data 字段是 list、dict{'list': [...]} 等情况（递归查找）。
-    未找到则 pytest.fail，并在断言信息里附上完整 body 便于排查。
+    /index/cart/index.html 是**页面接口**，返回 JSON 包装的 HTML 字符串
+    （content-type 虽是 application/json，但 data 是整页 HTML），
+    购物车记录 id 并不在 JSON 字段里，而是嵌在商品行 <tr> 的属性上：
+
+        <tr id="data-list-10086" data-id="10086" data-goods-id="1" ...>
+
+    因此从 HTML 中按 data-goods-id 定位行，再取同行 data-id 作为记录 id。
+    未找到则 pytest.fail，并在断言信息里附上页面关键片段便于排查。
     """
     resp = client.post(CART_URL)
     assert resp is not None and resp.status_code == 200, "查询购物车列表接口请求失败"
-    body = resp.json()
 
-    def _walk(node: Any) -> Any:
-        if isinstance(node, list):
-            for item in node:
-                found = _walk(item)
-                if found is not None:
-                    return found
-        elif isinstance(node, dict):
-            if node.get("goods_id") == goods_id and "id" in node:
-                return node.get("id")
-            for value in node.values():
-                found = _walk(value)
-                if found is not None:
-                    return found
-        return None
+    # 兼容三种返回形态：JSON 包装的 HTML 字符串 / JSON data 字段里带 HTML / 纯 HTML
+    html = resp.text
+    try:
+        body = resp.json()
+    except ValueError:
+        body = None
+    if isinstance(body, str):
+        html = body
+    elif isinstance(body, dict) and isinstance(body.get("data"), str):
+        html = body["data"]
 
-    cart_id = _walk(body.get("data")) if isinstance(body, dict) else None
+    cart_id = _extract_cart_id(html, goods_id)
     if cart_id is None:
+        snippet = re.sub(r"\s+", " ", html[:2000])
         pytest.fail(
-            f"未找到 goods_id={goods_id} 的购物车记录, "
-            f"body={json.dumps(body, ensure_ascii=False)}"
+            f"未在购物车页面中找到 goods_id={goods_id} 对应的记录 id，"
+            f"页面开头片段：{snippet}"
         )
     return cart_id
+
+
+def _extract_cart_id(html: str, goods_id: int) -> Optional[int]:
+    """从购物车页面 HTML 中提取指定 goods_id 行的记录 id（data-id）。"""
+    for tr_match in re.finditer(r"<tr\b[^>]*>", html):
+        tr = tr_match.group(0)
+        goods_match = re.search(r'data-goods-id="(\d+)"', tr)
+        if not goods_match or int(goods_match.group(1)) != int(goods_id):
+            continue
+        id_match = re.search(r'data-id="(\d+)"', tr)
+        if id_match:
+            return int(id_match.group(1))
+    return None
 
 
 def _assert_cart_expect(

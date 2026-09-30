@@ -71,8 +71,10 @@ class DataLoader(ABC):
         """
         加载测试用例数据（基类通用实现）
 
-        从数据文件中提取用例：优先取第一个 list 类型的顶级值作为用例列表，
+        从数据文件中提取用例：收集**所有** list 类型的顶级值并合并为用例列表，
         要求每条用例必须包含 case_id 字段，否则视为格式错误。
+        （一个 YAML 中存在多个用例分组时，如 add_cart / delete_cart，全部纳入 case_map，
+        由用例侧按 case_id 前缀自行分组。）
 
         Args:
             file_path (str): 测试用例文件路径
@@ -90,8 +92,7 @@ class DataLoader(ABC):
         cases: List[Dict[str, Any]] = []
         for value in data.values():
             if isinstance(value, list):
-                cases = value
-                break
+                cases.extend(value)
 
         valid_cases: List[Dict[str, Any]] = []
         for case in cases:
@@ -163,7 +164,7 @@ class AutoLoader(DataLoader):
         加载测试用例数据
 
         自动根据文件后缀路由到对应类型的 Loader，
-        返回第一个 list 类型的顶级值作为用例列表，要求每条用例必须包含 case_id。
+        收集所有 list 类型的顶级值合并为用例列表，要求每条用例必须包含 case_id。
 
         Args:
             file_path (str): 测试用例文件路径
